@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal, X, Briefcase, MapPin, Banknote, Clock } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, X, AlertCircle } from 'lucide-react';
 import { fetchJobs } from '@/lib/storage';
 import JobCard from '@/components/JobCard';
 import type { Job, Page } from '@/types';
@@ -23,14 +23,22 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
   const [showFilters, setShowFilters] = useState(false);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setLoading(true);
-    fetchJobs().then((jobs) => {
-      setAllJobs(jobs);
+    fetchJobs().then(({ jobs, error: err }) => {
+      if (err) {
+        setError(err);
+        setAllJobs([]);
+      } else {
+        setAllJobs(jobs);
+        setError(null);
+      }
       setLoading(false);
     });
-  }, [refreshKey]);
+  }, [refreshKey, retryCount]);
 
   const filtered = useMemo(() => {
     return allJobs.filter((job) => {
@@ -136,6 +144,22 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
           <div className="text-center py-20">
             <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-slate-400 text-sm">Carregando vagas...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <AlertCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-slate-600 mb-1">
+              Erro ao carregar vagas
+            </h3>
+            <p className="text-slate-400 text-sm mb-4">
+              Não foi possível conectar ao banco de dados. Tente novamente.
+            </p>
+            <button
+              onClick={() => setRetryCount((k) => k + 1)}
+              className="text-sm text-sky-600 font-semibold hover:underline"
+            >
+              Tentar novamente
+            </button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">

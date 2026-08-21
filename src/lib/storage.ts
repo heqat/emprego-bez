@@ -151,16 +151,17 @@ export async function saveCandidateProfile(
 
 // ============ Jobs ============
 
-export async function fetchJobs(): Promise<Job[]> {
+export async function fetchJobs(): Promise<{ jobs: Job[]; error: string | null }> {
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
     .eq('status', 'aberta')
     .order('created_at', { ascending: false });
 
-  if (error || !data) return [];
+  if (error) return { jobs: [], error: error.message };
+  if (!data) return { jobs: [], error: null };
 
-  return data.map((row: Record<string, unknown>) => ({
+  const jobs = data.map((row: Record<string, unknown>) => ({
     id: String(row.id),
     title: String(row.title ?? ''),
     company: String(row.company_name ?? ''),
@@ -179,6 +180,8 @@ export async function fetchJobs(): Promise<Job[]> {
     workModality: String(row.work_modality ?? ''),
     contractType: String(row.contract_type ?? ''),
   }));
+
+  return { jobs, error: null };
 }
 
 export async function fetchCompanyJobs(companyId: string): Promise<Job[]> {

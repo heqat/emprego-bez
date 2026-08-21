@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ArrowRight, MapPin, Users, TrendingUp, Star } from 'lucide-react';
+import { Search, ArrowRight, MapPin, Users, TrendingUp, Star, AlertCircle } from 'lucide-react';
 import { fetchJobs } from '@/lib/storage';
 import JobCard from '@/components/JobCard';
 import type { Job, Page } from '@/types';
@@ -18,10 +18,17 @@ const STATS = [
 export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps) {
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchJobs().then((jobs) => {
-      setRecentJobs(jobs.slice(0, 6));
+    fetchJobs().then(({ jobs, error: err }) => {
+      if (err) {
+        setError(err);
+        setRecentJobs([]);
+      } else {
+        setRecentJobs(jobs.slice(0, 6));
+        setError(null);
+      }
       setLoading(false);
     });
   }, []);
@@ -120,6 +127,14 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
             <div className="text-center py-16">
               <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
               <p className="text-slate-400 text-sm">Carregando vagas...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <AlertCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
+              <p className="text-red-500 text-sm font-medium mb-1">
+                Não foi possível carregar as vagas.
+              </p>
+              <p className="text-slate-400 text-xs">Tente novamente em alguns instantes.</p>
             </div>
           ) : recentJobs.length === 0 ? (
             <div className="text-center py-16">
