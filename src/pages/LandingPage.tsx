@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Search, ArrowRight, MapPin, Users, TrendingUp, Star } from 'lucide-react';
-import { RECENT_JOBS } from '@/data/mockJobs';
+import { fetchJobs } from '@/lib/storage';
 import JobCard from '@/components/JobCard';
 import type { Job, Page } from '@/types';
 
@@ -15,9 +16,18 @@ const STATS = [
 ];
 
 export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps) {
+  const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchJobs().then((jobs) => {
+      setRecentJobs(jobs.slice(0, 6));
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div>
-      {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700 text-white">
         <div
           className="absolute inset-0 opacity-10"
@@ -62,7 +72,6 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
           </div>
         </div>
 
-        {/* Wave divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1200 80" preserveAspectRatio="none" className="w-full h-12 fill-slate-50">
             <path d="M0,40 C300,80 900,0 1200,40 L1200,80 L0,80 Z" />
@@ -70,7 +79,6 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
         </div>
       </section>
 
-      {/* Stats */}
       <section className="bg-slate-50 pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -92,7 +100,6 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
         </div>
       </section>
 
-      {/* Recent jobs */}
       <section className="bg-slate-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
@@ -109,24 +116,39 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {RECENT_JOBS.map((job) => (
-              <JobCard key={job.id} job={job} onClick={onJobClick} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-slate-400 text-sm">Carregando vagas...</p>
+            </div>
+          ) : recentJobs.length === 0 ? (
+            <div className="text-center py-16">
+              <Search className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">
+                Ainda não há vagas publicadas. Volte em breve!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {recentJobs.map((job) => (
+                <JobCard key={job.id} job={job} onClick={onJobClick} />
+              ))}
+            </div>
+          )}
 
-          <div className="mt-8 text-center sm:hidden">
-            <button
-              onClick={() => onNavigate('dashboard')}
-              className="inline-flex items-center gap-2 text-sky-600 font-semibold"
-            >
-              Ver todas as vagas <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          {!loading && recentJobs.length > 0 && (
+            <div className="mt-8 text-center sm:hidden">
+              <button
+                onClick={() => onNavigate('dashboard')}
+                className="inline-flex items-center gap-2 text-sky-600 font-semibold"
+              >
+                Ver todas as vagas <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* CTA section */}
       <section className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-sky-700 to-sky-900 rounded-3xl p-10 lg:p-14 flex flex-col lg:flex-row items-center gap-8 text-center lg:text-left">
@@ -160,7 +182,6 @@ export default function LandingPage({ onNavigate, onJobClick }: LandingPageProps
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="font-semibold text-slate-300 mb-1">Bezerros Conecta Empregos</p>

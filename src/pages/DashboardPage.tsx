@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal, X } from 'lucide-react';
-import { MOCK_JOBS, AREAS } from '@/data/mockJobs';
-import { getPublishedJobs } from '@/lib/storage';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Filter, SlidersHorizontal, X, Briefcase, MapPin, Banknote, Clock } from 'lucide-react';
+import { fetchJobs } from '@/lib/storage';
 import JobCard from '@/components/JobCard';
 import type { Job, Page } from '@/types';
 
@@ -12,20 +11,30 @@ interface DashboardPageProps {
   refreshKey: number;
 }
 
+const AREAS = [
+  'Todas as áreas',
+  'Comércio', 'Administração', 'Construção', 'TI', 'Saúde',
+  'Alimentação', 'Transporte', 'Educação', 'Serviços Gerais',
+];
+
 export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refreshKey }: DashboardPageProps) {
   const [search, setSearch] = useState('');
   const [selectedArea, setSelectedArea] = useState('Todas as áreas');
   const [showFilters, setShowFilters] = useState(false);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allJobs = useMemo(() => {
-    const published = getPublishedJobs();
-    return [...published, ...MOCK_JOBS];
+  useEffect(() => {
+    setLoading(true);
+    fetchJobs().then((jobs) => {
+      setAllJobs(jobs);
+      setLoading(false);
+    });
   }, [refreshKey]);
 
   const filtered = useMemo(() => {
     return allJobs.filter((job) => {
-      const matchArea =
-        selectedArea === 'Todas as áreas' || job.area === selectedArea;
+      const matchArea = selectedArea === 'Todas as áreas' || job.area === selectedArea;
       const q = search.toLowerCase().trim();
       const matchSearch =
         !q ||
@@ -38,15 +47,13 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Page header */}
       <div className="bg-gradient-to-r from-sky-800 to-sky-700 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-1">Vagas disponíveis</h1>
           <p className="text-sky-200 text-sm">
-            {allJobs.length} oportunidades em Bezerros e região
+            {loading ? 'Carregando...' : `${allJobs.length} oportunidades em Bezerros e região`}
           </p>
 
-          {/* Search bar */}
           <div className="mt-6 flex gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -79,7 +86,6 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
             </button>
           </div>
 
-          {/* Filter panel */}
           {showFilters && (
             <div className="mt-4 bg-white rounded-xl p-4">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
@@ -106,9 +112,7 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
         </div>
       </div>
 
-      {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Active filter chip */}
         {selectedArea !== 'Todas as áreas' && (
           <div className="flex items-center gap-2 mb-5">
             <span className="text-sm text-slate-500">Filtrando por:</span>
@@ -128,7 +132,12 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
           </p>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">Carregando vagas...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <Search className="w-10 h-10 text-slate-300 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-slate-600 mb-1">
@@ -152,8 +161,7 @@ export default function DashboardPage({ isLoggedIn, onJobClick, onNavigate, refr
           </div>
         )}
 
-        {/* CTA for guests */}
-        {!isLoggedIn && (
+        {!isLoggedIn && !loading && (
           <div className="mt-10 bg-gradient-to-r from-sky-700 to-sky-800 rounded-2xl p-8 text-white text-center">
             <h3 className="text-xl font-bold mb-2">
               Candidate-se com um clique!

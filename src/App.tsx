@@ -9,19 +9,22 @@ import DashboardPage from '@/pages/DashboardPage';
 import JobDetailPage from '@/pages/JobDetailPage';
 import CompanyDashboardPage from '@/pages/CompanyDashboardPage';
 import PublishJobPage from '@/pages/PublishJobPage';
-import { getSession, clearSession, getCompanyProfile } from '@/lib/storage';
-import type { Job, Page, User } from '@/types';
+import { getCurrentUser, signOut, getCompanyProfile } from '@/lib/storage';
+import type { Job, Page, AppUser } from '@/types';
 
 export default function App() {
   const [page, setPage] = useState<Page>('landing');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prevPage, setPrevPage] = useState<Page>('dashboard');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [booted, setBooted] = useState(false);
 
   useEffect(() => {
-    const session = getSession();
-    if (session) setCurrentUser(session);
+    getCurrentUser().then((user) => {
+      if (user) setCurrentUser(user);
+      setBooted(true);
+    });
   }, []);
 
   const navigate = (target: Page) => {
@@ -37,48 +40,47 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLoginSuccess = (userEmail: string) => {
-    const session = getSession();
-    if (session) {
-      setCurrentUser(session);
-      if (session.role === 'company') {
-        const hasProfile = !!getCompanyProfile(session.id);
-        navigate(hasProfile ? 'company-dashboard' : 'company-onboarding');
-      } else {
-        navigate('dashboard');
-      }
+  const handleLoginSuccess = async () => {
+    const user = await getCurrentUser();
+    if (!user) return;
+    setCurrentUser(user);
+    if (user.role === 'empresa') {
+      const profile = await getCompanyProfile(user.id);
+      navigate(profile ? 'company-dashboard' : 'company-onboarding');
+    } else {
+      navigate('dashboard');
     }
   };
 
-  const handleRegisterSuccess = (user: User) => {
+  const handleRegisterSuccess = (user: AppUser) => {
     setCurrentUser(user);
-    if (user.role === 'company') {
+    if (user.role === 'empresa') {
       navigate('company-onboarding');
     } else {
       navigate('onboarding');
     }
   };
 
-  const handleLogout = () => {
-    clearSession();
+  const handleLogout = async () => {
+    await signOut();
     setCurrentUser(null);
     navigate('landing');
   };
 
-  const handleOnboardingComplete = () => {
-    navigate('dashboard');
-  };
-
-  const handleCompanyOnboardingComplete = () => {
-    navigate('company-dashboard');
-  };
-
+  const handleOnboardingComplete = () => navigate('dashboard');
+  const handleCompanyOnboardingComplete = () => navigate('company-dashboard');
   const handleJobPublished = () => {
     setRefreshKey((k) => k + 1);
     navigate('company-dashboard');
   };
 
   const showHeader = page !== 'onboarding' && page !== 'company-onboarding';
+
+  if (!booted) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -87,7 +89,7 @@ export default function App() {
           currentPage={page}
           onNavigate={navigate}
           isLoggedIn={!!currentUser}
-          userName={currentUser?.name}
+          userName={currentUser?.email}
           userRole={currentUser?.role}
           companyName={currentUser?.companyName}
           onLogout={handleLogout}
@@ -107,7 +109,7 @@ export default function App() {
         {page === 'onboarding' && currentUser && (
           <OnboardingPage
             userId={currentUser.id}
-            userName={currentUser.name}
+            userName={currentUser.companyName || currentUser.email}
             onComplete={handleOnboardingComplete}
             onNavigate={navigate}
           />
@@ -115,7 +117,7 @@ export default function App() {
         {page === 'company-onboarding' && currentUser && (
           <CompanyOnboardingPage
             userId={currentUser.id}
-            companyName={currentUser.companyName || currentUser.name}
+            companyName={currentUser.companyName || currentUser.email}
             onComplete={handleCompanyOnboardingComplete}
             onNavigate={navigate}
           />
@@ -142,7 +144,7 @@ export default function App() {
         {page === 'company-dashboard' && currentUser && (
           <CompanyDashboardPage
             ownerId={currentUser.id}
-            companyName={currentUser.companyName || currentUser.name}
+            companyName={currentUser.companyName || currentUser.email}
             onNavigate={navigate}
             onJobClick={handleJobClick}
             refreshKey={refreshKey}
@@ -150,8 +152,7 @@ export default function App() {
         )}
         {page === 'publish-job' && currentUser && (
           <PublishJobPage
-            companyName={currentUser.companyName || currentUser.name}
-            companyAddress={getCompanyProfile(currentUser.id)?.address || ''}
+            companyName={currentUser.companyName || currentUser.email}
             ownerId={currentUser.id}
             onPublished={handleJobPublished}
             onNavigate={navigate}

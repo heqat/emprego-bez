@@ -63,7 +63,7 @@ export default function JobCard({ job, onClick, compact }: JobCardProps) {
 
       <div className="flex items-center justify-between pt-3 border-t border-slate-100">
         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
-          {job.type}
+          {job.contractType || job.type}
         </span>
         <div className="flex items-center gap-1 text-xs text-slate-400">
           <Clock className="w-3.5 h-3.5" />

@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   Building2,
   Send,
+  GraduationCap,
+  Globe,
+  FileText,
 } from 'lucide-react';
 import ApplyModal from '@/components/ApplyModal';
 import type { Job, Page } from '@/types';
@@ -32,6 +35,7 @@ const AREA_COLORS: Record<string, string> = {
 };
 
 function formatDate(dateStr: string) {
+  if (!dateStr) return '';
   const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
@@ -51,7 +55,6 @@ export default function JobDetailPage({ job, isLoggedIn, onNavigate, onBack }: J
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        {/* Back button */}
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-6"
@@ -60,9 +63,7 @@ export default function JobDetailPage({ job, isLoggedIn, onNavigate, onBack }: J
           Voltar às vagas
         </button>
 
-        {/* Main card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Card header */}
           <div className="bg-gradient-to-br from-sky-800 to-sky-700 p-7 text-white">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -90,7 +91,7 @@ export default function JobDetailPage({ job, isLoggedIn, onNavigate, onBack }: J
                   <Briefcase className="w-3.5 h-3.5" />
                   Contrato
                 </div>
-                <p className="text-sm font-semibold text-white">{job.type}</p>
+                <p className="text-sm font-semibold text-white">{job.contractType || job.type}</p>
               </div>
               <div className="bg-white/10 rounded-xl p-3 col-span-2">
                 <div className="flex items-center gap-1.5 text-sky-300 text-xs mb-1">
@@ -102,50 +103,65 @@ export default function JobDetailPage({ job, isLoggedIn, onNavigate, onBack }: J
             </div>
           </div>
 
-          {/* Body */}
           <div className="p-7 space-y-7">
-            {/* Description */}
             <div>
               <h2 className="text-base font-bold text-slate-800 mb-3">Descrição da vaga</h2>
               <p className="text-slate-600 text-sm leading-relaxed">{job.description}</p>
             </div>
 
-            {/* Requirements */}
             <div>
               <h2 className="text-base font-bold text-slate-800 mb-3">Requisitos</h2>
-              <ul className="space-y-2">
-                {job.requirements.map((req, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600">
-                    <CheckCircle2 className="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" />
-                    {req}
-                  </li>
-                ))}
-              </ul>
+              {job.requirements.length > 0 ? (
+                <ul className="space-y-2">
+                  {job.requirements.map((req, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <CheckCircle2 className="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" />
+                      {req}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-slate-400 text-sm">Nenhum requisito especificado.</p>
+              )}
             </div>
 
-            {/* Benefits */}
             <div>
-              <h2 className="text-base font-bold text-slate-800 mb-3">Benefícios</h2>
-              <div className="flex flex-wrap gap-2">
-                {job.benefits.map((b, i) => (
-                  <span
-                    key={i}
-                    className="bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-green-100"
-                  >
-                    {b}
-                  </span>
-                ))}
+              <h2 className="text-base font-bold text-slate-800 mb-3">Informações da vaga</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {job.experienceLevel && (
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      Nível
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">{job.experienceLevel}</p>
+                  </div>
+                )}
+                {job.workModality && (
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
+                      <Globe className="w-3.5 h-3.5" />
+                      Modalidade
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">{job.workModality}</p>
+                  </div>
+                )}
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
+                    <FileText className="w-3.5 h-3.5" />
+                    Contrato
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">{job.contractType || job.type}</p>
+                </div>
               </div>
             </div>
 
-            {/* Posted date */}
             <div className="flex items-center gap-1.5 text-xs text-slate-400 pt-2 border-t border-slate-100">
               <Clock className="w-3.5 h-3.5" />
-              Publicada em {formatDate(job.postedAt)}
+              {job.postedAt ? `Publicada em ${formatDate(job.postedAt)}` : 'Data não disponível'}
             </div>
           </div>
 
-          {/* CTA */}
           <div className="px-7 pb-7">
             <button
               onClick={handleApply}
